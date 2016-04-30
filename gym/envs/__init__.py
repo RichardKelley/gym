@@ -51,6 +51,13 @@ register(
 # ----------------------------------------
 
 register(
+    id='PlanarQuad2D-v0',
+    entry_point='gym.envs.classic_control:PlanarQuadEnv',
+    timestep_limit=200,
+    reward_threshold=200
+)
+
+register(
     id='CartPole-v0',
     entry_point='gym.envs.classic_control:CartPoleEnv',
     timestep_limit=200,
