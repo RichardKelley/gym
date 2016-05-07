@@ -51,7 +51,7 @@ register(
 # ----------------------------------------
 
 register(
-    id='PlanarQuad2D-v0',
+    id='PlanarQuad-v0',
     entry_point='gym.envs.classic_control:PlanarQuadEnv',
     timestep_limit=200,
     reward_threshold=200
