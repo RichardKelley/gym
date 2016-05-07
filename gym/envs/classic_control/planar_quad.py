@@ -24,13 +24,11 @@ u(1) - thrust for right prop
 class PlanarQuadEnv(gym.Env):
     metadata = {
         'render.modes' : ['human', 'rgb_array'],
-        'video.frames_per_second' : 30
+        'video.frames_per_second' : 60
         }
 
     def __init__(self):
-        self.max_speed = 8
-        self.max_torque = 2.
-        self.dt = 0.05
+        self.dt = 0.005
         self.viewer = None
 
         self.action_space = spaces.Box(-5, 5, (2,))
@@ -48,6 +46,7 @@ class PlanarQuadEnv(gym.Env):
         qdd = np.asarray([-math.sin(pos[2])/m * (u[0] + u[1]), 
                            -g + math.cos(pos[2])/m * (u[0] + u[1]), 
                            L/I * (-u[0] + u[1])])
+
         
         # integrate the acceleration to get new velocity
         new_vel = vel + qdd * self.dt
@@ -57,19 +56,21 @@ class PlanarQuadEnv(gym.Env):
 
         self.state = np.concatenate((new_pos, new_vel), axis=0)
 
-        if pos[1] < 0 or ( (pos[0] - 4)**2 + (pos[1] - 4)**2 < 0.1 ):
+        if ( (pos[0] - 0)**2 + (pos[1] - 12)**2 < 0.1 ):
             done = True
+            reward = 100.0
+        elif pos[1] < 0 or abs(pos[0]) > 10:
+            done = True
+            reward = -1.0
         else:
             done = False
-        reward = -1.0
+            reward = -1.0
 
-        return self.state[0:3], reward, done, {}
+        return self.state, reward, done, {}
         
 
     def _reset(self):
-        pos = np.random.uniform(-4, 4)
-        height = np.random.uniform(1, 2)
-        self.state = np.asarray([pos, height, np.random.uniform(-3.14/8, 3.14/8), 0,0,0])
+        self.state = np.asarray([0,4,0,0,0,0]) + 2 * np.random.randn(6)
         return self.state
 
     def _get_obs(self):
@@ -83,8 +84,8 @@ class PlanarQuadEnv(gym.Env):
 
         if self.viewer is None:
             from gym.envs.classic_control import rendering
-            self.viewer = rendering.Viewer(500, 500)
-            self.viewer.set_bounds(-10, 10, -1, 10)
+            self.viewer = rendering.Viewer(600, 600)
+            self.viewer.set_bounds(-10, 10, 0, 20)
 
             airframe = rendering.make_capsule(2.5,0.15)
             airframe.set_color(0,0,1)
@@ -115,8 +116,8 @@ class PlanarQuadEnv(gym.Env):
 
             self.viewer.add_geom(airframe)
 
-            self.ground = rendering.Line((-10,1), (10, 1))
-            self.viewer.add_geom(self.ground)
+            #self.ground = rendering.Line((-10,0), (10, 0))
+            #self.viewer.add_geom(self.ground)
 
         q = self.state
         self.airframe_transform.set_translation(q[0], q[1])
