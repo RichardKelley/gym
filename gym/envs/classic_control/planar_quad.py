@@ -3,6 +3,7 @@ from gym import spaces
 import numpy as np
 from os import path
 import math
+import random
 
 '''
 Based on the Quadrotor2D implementation in Drake:
@@ -28,8 +29,11 @@ class PlanarQuadEnv(gym.Env):
         }
 
     def __init__(self):
-        self.dt = 0.01
+        self.dt = 0.02
         self.viewer = None
+
+        self.done = False
+        self.success_count = 0
 
         self.action_space = spaces.Box(-5, 5, (2,))
         self.observation_space = spaces.Box(low=np.asarray([-10, 0]), high=np.asarray([10, 10]))
@@ -41,36 +45,45 @@ class PlanarQuadEnv(gym.Env):
         I = 0.00383 # moment of inertia
         g = 9.81 # gravity
 
+        u = np.clip(u, 0, 10)
+        
         pos = self.state[0:3]
         vel = self.state[3:6]
-        qdd = np.asarray([-math.sin(pos[2])/m * (u[0] + u[1]), 
-                           -g + math.cos(pos[2])/m * (u[0] + u[1]), 
-                           L/I * (-u[0] + u[1])])
 
-        new_vel = vel + qdd * self.dt
-        new_pos = pos + new_vel * self.dt
+        # Stormer-Verlet integration
+        qdd = lambda pos: np.asarray([-math.sin(pos[2])/m * (u[0] + u[1]),
+                                      -g + math.cos(pos[2])/m * (u[0] + u[1]),
+                                      L/I * (-u[0] + u[1])])
+        v_t_plus_one_half = vel + 0.5 * qdd(pos) * self.dt
+        x_t_plus_dt = pos + v_t_plus_one_half * self.dt
+        a_t_plus_dt = qdd(x_t_plus_dt)
+        v_t_plus_dt = v_t_plus_one_half + 0.5 * a_t_plus_dt * self.dt
 
-        self.state = np.concatenate((new_pos, new_vel), axis=0)
+        self.state = np.concatenate((x_t_plus_dt, v_t_plus_dt), axis=0)
 
         if ( (pos[0] - 0)**2 + (pos[1] - 12)**2 < 0.1 ):
-            done = True
-            reward = 100.0
-        elif pos[1] < 0 or abs(pos[0]) > 10:
-            done = True
+            reward = 10.0
+            self.success_count += 1
+            if self.success_count > 60:
+                self.done = True
+        elif pos[1] < 0 or pos[1] > 22 or abs(pos[0]) > 12:
+            self.done = True
             reward = -1.0
         else:
-            done = False
+            self.done = False
             reward = -1.0
 
-        return self.state, reward, done, {}
+        return self.state, reward, self.done, {}
         
 
     def _reset(self):
-        self.state = np.asarray([0,4,0,0,0,0]) + 2 * np.random.randn(6)
+        self.done = False
+        self.state = np.asarray([random.random() * 16 - 8,
+                                 random.random() * 16,
+                                 0, 0,0,0]) + np.concatenate((np.zeros(3),
+                                                              np.random.randn(3)),
+                                                             axis=0)
         return self.state
-
-    def _get_obs(self):
-        return self.state[0:3]
 
     def _render(self, mode='human', close=False):
         if close:
@@ -90,7 +103,7 @@ class PlanarQuadEnv(gym.Env):
             airframe.add_attr(self.airframe_transform)
 
             left_prop_shaft = rendering.Line((0,0), (0,0.25))
-            left_prop_shaft.add_attr(rendering.Transform(translation=(0.75/2 - 1.25, 0.0)))
+            left_prop_shaft.add_attr(rendering.Transform(translation=(-0.875, 0.0)))
             left_prop_shaft.add_attr(self.airframe_transform)
             self.viewer.add_geom(left_prop_shaft)
 
@@ -101,24 +114,21 @@ class PlanarQuadEnv(gym.Env):
             self.viewer.add_geom(left_prop)
 
             right_prop_shaft = rendering.Line((0,0), (0,0.25))
-            right_prop_shaft.add_attr(rendering.Transform(translation=(2.5 - 0.75/2 - 1.25, 0.0)))
+            right_prop_shaft.add_attr(rendering.Transform(translation=(0.875, 0.0)))
             right_prop_shaft.add_attr(self.airframe_transform)
             self.viewer.add_geom(right_prop_shaft)
 
             right_prop = rendering.make_capsule(0.75, 0.1)
-            right_prop.add_attr(rendering.Transform(translation=(2.5 - 0.75 - 1.25, 0.25)))
+            right_prop.add_attr(rendering.Transform(translation=(0.5, 0.25)))
             right_prop.add_attr(self.airframe_transform)
             right_prop.set_color(0,1,0)
             self.viewer.add_geom(right_prop)
 
             self.viewer.add_geom(airframe)
 
-            #self.ground = rendering.Line((-10,0), (10, 0))
-            #self.viewer.add_geom(self.ground)
-
         q = self.state
         self.airframe_transform.set_translation(q[0], q[1])
-        self.airframe_transform.set_rotation(math.sin(q[2]))
+        self.airframe_transform.set_rotation(q[2])
 
         self.viewer.render()
         if mode == 'rgb_array':
