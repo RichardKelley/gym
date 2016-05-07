@@ -28,7 +28,7 @@ class PlanarQuadEnv(gym.Env):
         }
 
     def __init__(self):
-        self.dt = 0.005
+        self.dt = 0.01
         self.viewer = None
 
         self.action_space = spaces.Box(-5, 5, (2,))
@@ -47,11 +47,7 @@ class PlanarQuadEnv(gym.Env):
                            -g + math.cos(pos[2])/m * (u[0] + u[1]), 
                            L/I * (-u[0] + u[1])])
 
-        
-        # integrate the acceleration to get new velocity
         new_vel = vel + qdd * self.dt
-
-        # integrate the velocity to get new position
         new_pos = pos + new_vel * self.dt
 
         self.state = np.concatenate((new_pos, new_vel), axis=0)
