@@ -88,28 +88,29 @@ class PlanarQuadEnv(gym.Env):
             self.viewer.set_bounds(-10, 10, 0, 20)
 
             airframe = rendering.make_capsule(2.5,0.15)
+	    airframe.add_attr(rendering.Transform(translation=(-1.25, 0.0)))
             airframe.set_color(0,0,1)
             self.airframe_transform = rendering.Transform()
             airframe.add_attr(self.airframe_transform)
 
             left_prop_shaft = rendering.Line((0,0), (0,0.25))
-            left_prop_shaft.add_attr(rendering.Transform(translation=(0.75/2, 0.0)))
+            left_prop_shaft.add_attr(rendering.Transform(translation=(0.75/2 - 1.25, 0.0)))
             left_prop_shaft.add_attr(self.airframe_transform)
             self.viewer.add_geom(left_prop_shaft)
 
             left_prop = rendering.make_capsule(0.75, 0.1)
-            left_prop.add_attr(rendering.Transform(translation=(0.0, 0.25)))
+            left_prop.add_attr(rendering.Transform(translation=(-1.25, 0.25)))
             left_prop.add_attr(self.airframe_transform)
             left_prop.set_color(0,1,0)
             self.viewer.add_geom(left_prop)
 
             right_prop_shaft = rendering.Line((0,0), (0,0.25))
-            right_prop_shaft.add_attr(rendering.Transform(translation=(2.5 - 0.75/2, 0.0)))
+            right_prop_shaft.add_attr(rendering.Transform(translation=(2.5 - 0.75/2 - 1.25, 0.0)))
             right_prop_shaft.add_attr(self.airframe_transform)
             self.viewer.add_geom(right_prop_shaft)
 
             right_prop = rendering.make_capsule(0.75, 0.1)
-            right_prop.add_attr(rendering.Transform(translation=(2.5 - 0.75, 0.25)))
+            right_prop.add_attr(rendering.Transform(translation=(2.5 - 0.75 - 1.25, 0.25)))
             right_prop.add_attr(self.airframe_transform)
             right_prop.set_color(0,1,0)
             self.viewer.add_geom(right_prop)
