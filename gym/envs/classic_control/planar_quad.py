@@ -36,7 +36,7 @@ class PlanarQuadEnv(gym.Env):
         self.success_count = 0
 
         self.action_space = spaces.Box(-5, 5, (2,))
-        self.observation_space = spaces.Box(low=np.asarray([-10, 0]), high=np.asarray([10, 10]))
+        self.observation_space = spaces.Box(low=np.asarray([-10, 0, 0, 0, 0, 0]), high=np.asarray([10, 10, 0, 0, 0 ,0]))
 
     def _step(self, u):
         # based on Drake, which is based on (Bouadi, Bouchoucha, Tadjine 2007)
