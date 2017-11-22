@@ -49,6 +49,12 @@ register(
 
 # Classic
 # ----------------------------------------
+register(
+    id='FenceEscape-v0',
+    entry_point='gym.envs.classic_control:FenceEscapeEnv',
+    timestep_limit=200,
+    reward_threshold=200
+)
 
 register(
     id='PlanarQuad-v0',
